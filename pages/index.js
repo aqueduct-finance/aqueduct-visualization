@@ -22,7 +22,8 @@ export default function LPandTraderWithFees() {
     /* animation */
     const [tick, setTick] = useState(0);
     useEffect(() => {
-        if (running) {
+        // only run when switched to 'running' and the edit modals are closed
+        if (running && editingPosition == undefined && editingLpPosition == undefined) {
             const timer = setTimeout(() => {
                 // update tick for animation
                 setTick(t => t + 1);
@@ -54,6 +55,11 @@ export default function LPandTraderWithFees() {
     const [lpPositions, setLpPositions] = useState([]);
     const [editingLpPosition, setEditingLpPosition] = useState(undefined);
 
+    // start timer again if switched on, or closed editing modal
+    useEffect(() => {
+        setTick(t => t + 1);
+    }, [running, editingPosition, editingLpPosition])
+
     return (
         <div 
             className={`p-16 flex flex-col h-screen w-screen`}
@@ -74,9 +80,9 @@ export default function LPandTraderWithFees() {
                             <Switch 
                                 onChange={(v) => {
                                     setRunning(v);
-                                    if (v == true) {
-                                        setTick(t => t + 1);
-                                    }
+                                    //if (v == true) {
+                                    //    setTick(t => t + 1);
+                                    //}
                                 }} 
                                 checked={running} 
                                 onColor='#0160D1'
@@ -140,7 +146,7 @@ export default function LPandTraderWithFees() {
                         </button>
                     </div>
                 </div>
-                <div className="flex space-x-32 items-center justify-center h-[80%]">
+                <div className="flex space-x-32 items-center justify-center h-[80%] mt-8 overflow-hidden">
                     <div className='flex flex-col items-center justify-center space-y-2 w-[22rem] flex-shrink-0'>
                         {
                             positions.map((p, i) => {
