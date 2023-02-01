@@ -16,22 +16,31 @@ const EditLp = (props) => {
         const balance0 = isNaN(parseFloat(displayedBalance0)) ? 0 : parseFloat(displayedBalance0);
         const balance1 = isNaN(parseFloat(displayedBalance1)) ? 0 : parseFloat(displayedBalance1);
 
+        const rewardPercentage = 1;
+
         props.setTotalFlowA(a => a - (props.positions[props.editingPosition].flowA));
         props.setTotalFlowB(b => b - (props.positions[props.editingPosition].flowB));
-
+        props.setTotalLiquidityFlowA(a => a - (props.positions[props.editingPosition].flowA * props.positions[props.editingPosition].rewardPercentage));
+        props.setTotalLiquidityFlowB(b => b - (props.positions[props.editingPosition].flowB * props.positions[props.editingPosition].rewardPercentage));
+        props.setTotalSwapFlowA(a => a - (props.positions[props.editingPosition].flowA * (1 - props.positions[props.editingPosition].rewardPercentage)));
+        props.setTotalSwapFlowB(b => b - (props.positions[props.editingPosition].flowB * (1 - props.positions[props.editingPosition].rewardPercentage)));
+        
         const nextPositions = props.positions.map((p, i) => {
             if (props.editingPosition == i) {
                 return {
                     ...p,
-                    balanceA: (balance0 - (p.flowA * (props.time - p.initialTimestampA)) + (p.flowB * (props.cumulativeB - p.initialCumulativeB))),
-                    balanceB: (balance1 - (p.flowB * (props.time - p.initialTimestampB)) + (p.flowA * (props.cumulativeA - p.initialCumulativeA))),
+                    balanceA: (balance0 - (p.flowA * (props.time - p.initialTimestampA)) + (p.flowB * (props.cumulativeB - p.initialCumulativeB)) + (p.flowB * p.rewardPercentage * (props.rewardsCumulativeB - p.initialRewardsCumulativeB))),
+                    balanceB: (balance1 - (p.flowB * (props.time - p.initialTimestampB)) + (p.flowA * (props.cumulativeA - p.initialCumulativeA)) + (p.flowA * p.rewardPercentage * (props.rewardsCumulativeA - p.initialRewardsCumulativeA))),
                     token: token,
                     flowA: flowRate0,
                     flowB: flowRate1,
                     initialTimestampA: props.time,
                     initialTimestampB: props.time,
                     initialCumulativeA: props.cumulativeA,
-                    initialCumulativeB: props.cumulativeB
+                    initialCumulativeB: props.cumulativeB,
+                    initialRewardsCumulativeA: props.rewardsCumulativeA,
+                    initialRewardsCumulativeB: props.rewardsCumulativeB,
+                    rewardPercentage: rewardPercentage
                 };
             } else {
                 return p;
@@ -41,6 +50,10 @@ const EditLp = (props) => {
 
         props.setTotalFlowA(a => a + flowRate0);
         props.setTotalFlowB(b => b + flowRate1);
+        props.setTotalLiquidityFlowA(a => a + (flowRate0 * rewardPercentage));
+        props.setTotalLiquidityFlowB(b => b + (flowRate1 * rewardPercentage));
+        props.setTotalSwapFlowA(a => a + (flowRate0 * (1-rewardPercentage)));
+        props.setTotalSwapFlowB(b => b + (flowRate1 * (1-rewardPercentage)));
     }
 
     const submit = (e) => {

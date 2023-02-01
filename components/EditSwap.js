@@ -16,13 +16,15 @@ const EditSwap = (props) => {
         
         props.setTotalFlowA(a => a - (props.positions[props.editingPosition].flowA));
         props.setTotalFlowB(b => b - (props.positions[props.editingPosition].flowB));
+        props.setTotalSwapFlowA(a => a - (props.positions[props.editingPosition].flowA));
+        props.setTotalSwapFlowB(b => b - (props.positions[props.editingPosition].flowB));
 
         const nextPositions = props.positions.map((p, i) => {
             if (props.editingPosition == i) {
                 return {
                     ...p,
-                    balanceA: (p.token == 0 ? balance0 - (p.flowA * (props.time - p.initialTimestamp)) : balance0 + (p.flowB * (props.cumulativeB - p.initialCumulative))),
-                    balanceB: (p.token == 1 ? balance1 - (p.flowB * (props.time - p.initialTimestamp)) : balance1 + (p.flowA * (props.cumulativeA - p.initialCumulative))),
+                    balanceA: (p.token == 0 ? balance0 - (p.flowA * (props.time - p.initialTimestamp)) : balance0 + (p.flowB * (1-props.poolFee) * (props.cumulativeB - p.initialCumulative))),
+                    balanceB: (p.token == 1 ? balance1 - (p.flowB * (props.time - p.initialTimestamp)) : balance1 + (p.flowA * (1-props.poolFee) * (props.cumulativeA - p.initialCumulative))),
                     token: token,
                     flowA: token == 0 ? flowRate : 0,
                     flowB: token == 1 ? flowRate : 0,
@@ -37,8 +39,10 @@ const EditSwap = (props) => {
 
         if (token == 0) {
             props.setTotalFlowA(a => a + flowRate);
+            props.setTotalSwapFlowA(a => a + flowRate);
         } else {
             props.setTotalFlowB(b => b + flowRate);
+            props.setTotalSwapFlowB(b => b + flowRate);
         }
     }
 

@@ -17,6 +17,8 @@ export default function LPandTraderWithFees() {
     /* mock fda */
     const [cumulativeA, setCumulativeA] = useState(0);
     const [cumulativeB, setCumulativeB] = useState(0);
+    const [rewardsCumulativeA, setRewardsCumulativeA] = useState(0);
+    const [rewardsCumulativeB, setRewardsCumulativeB] = useState(0);
     const [time, setTime] = useState(0);
 
     /* animation */
@@ -33,6 +35,11 @@ export default function LPandTraderWithFees() {
                 if (totalFlowA > 0 && totalFlowB > 0) {
                     setCumulativeA(c => c + (totalFlowB / totalFlowA * (ANIMATION_MINIMUM_STEP_TIME/1000)));
                     setCumulativeB(c => c + (totalFlowA / totalFlowB * (ANIMATION_MINIMUM_STEP_TIME/1000)));
+
+                    if (totalLiquidityFlowA > 0 && totalLiquidityFlowB > 0) {
+                        setRewardsCumulativeA(c => c + (totalSwapFlowB * (totalFlowA/totalFlowB) * poolFee / totalLiquidityFlowA * (ANIMATION_MINIMUM_STEP_TIME/1000)));
+                        setRewardsCumulativeB(c => c + (totalSwapFlowA * (totalFlowB/totalFlowA) * poolFee / totalLiquidityFlowB * (ANIMATION_MINIMUM_STEP_TIME/1000)));
+                    }
                 }
             }, ANIMATION_MINIMUM_STEP_TIME);
             return () => {
@@ -45,7 +52,12 @@ export default function LPandTraderWithFees() {
     /* pool vars */
     const [totalFlowA, setTotalFlowA] = useState(0);
     const [totalFlowB, setTotalFlowB] = useState(0);
-    const poolFee = 0.01;
+    const [totalSwapFlowA, setTotalSwapFlowA] = useState(0);
+    const [totalSwapFlowB, setTotalSwapFlowB] = useState(0);
+    const [totalLiquidityFlowA, setTotalLiquidityFlowA] = useState(0);
+    const [totalLiquidityFlowB, setTotalLiquidityFlowB] = useState(0);
+    const poolFee = 0.005;
+    //const protocolFee = 0.05;
 
     /* regular swap positions */
     const [positions, setPositions] = useState([]);
@@ -80,9 +92,6 @@ export default function LPandTraderWithFees() {
                             <Switch 
                                 onChange={(v) => {
                                     setRunning(v);
-                                    //if (v == true) {
-                                    //    setTick(t => t + 1);
-                                    //}
                                 }} 
                                 checked={running} 
                                 onColor='#0160D1'
@@ -135,7 +144,10 @@ export default function LPandTraderWithFees() {
                                     initialCumulativeA: 0,
                                     initialTimestampA: 0,
                                     initialCumulativeB: 0,
+                                    initialRewardsCumulativeA: 0,
+                                    initialRewardsCumulativeB: 0,
                                     initialTimestampB: 0,
+                                    rewardPercentage: 0
                                 }]);
                             }}
                         >
@@ -188,7 +200,7 @@ export default function LPandTraderWithFees() {
                                                         value={   
                                                             p.token == 0 ? 
                                                             Number((p.balanceA - (p.flowA * (time - p.initialTimestamp))).toFixed(10)) : 
-                                                            Number((p.balanceA + (p.flowB * (cumulativeB - p.initialCumulative))).toFixed(10))
+                                                            Number((p.balanceA + (p.flowB * (1-poolFee) * (cumulativeB - p.initialCumulative))).toFixed(10))
                                                         }
                                                     />
                                                 </div>
@@ -200,7 +212,7 @@ export default function LPandTraderWithFees() {
                                                         value={  
                                                             p.token == 1 ? 
                                                             Number((p.balanceB - (p.flowB * (time - p.initialTimestamp))).toFixed(10)) : 
-                                                            Number((p.balanceB + (p.flowA * (cumulativeA - p.initialCumulative))).toFixed(10))
+                                                            Number((p.balanceB + (p.flowA * (1-poolFee) * (cumulativeA - p.initialCumulative))).toFixed(10))
                                                         }
                                                     />
                                                 </div>
@@ -212,12 +224,12 @@ export default function LPandTraderWithFees() {
                                                 <input 
                                                     className='w-full outline-none monospace-font'
                                                     readonly
-                                                    value={(p.token == 0 ? ('-' + p.flowA) : ('+' + (totalFlowB > 0 ? p.flowB * totalFlowA / totalFlowB : 0)))}
+                                                    value={(p.token == 0 ? ('-' + p.flowA) : ('+' + (totalFlowB > 0 ? p.flowB * (1 - poolFee) * totalFlowA / totalFlowB : 0)))}
                                                 />
                                                 <input 
                                                     className='w-full outline-none monospace-font'
                                                     readonly
-                                                    value={(p.token == 1 ? ('-' + p.flowB) : ('+' + (totalFlowA > 0 ? p.flowA * totalFlowB / totalFlowA : 0)))}
+                                                    value={(p.token == 1 ? ('-' + p.flowB) : ('+' + (totalFlowA > 0 ? p.flowA * (1 - poolFee) * totalFlowB / totalFlowA : 0)))}
                                                 />
                                             </div>
                                         </div>
@@ -432,7 +444,7 @@ export default function LPandTraderWithFees() {
                                                     className='w-full outline-none monospace-font'
                                                     readonly
                                                     value={ 
-                                                        Number((p.balanceA - (p.flowA * (time - p.initialTimestampA)) + (p.flowB * (cumulativeB - p.initialCumulativeB))).toFixed(10))
+                                                        Number((p.balanceA - (p.flowA * (time - p.initialTimestampA)) + (p.flowB * (cumulativeB - p.initialCumulativeB)) + (p.flowA * p.rewardPercentage * (rewardsCumulativeA - p.initialRewardsCumulativeA))).toFixed(10))
                                                     }
                                                 />
                                             </div>
@@ -442,7 +454,7 @@ export default function LPandTraderWithFees() {
                                                     className='w-full outline-none monospace-font'
                                                     readonly
                                                     value={
-                                                        Number((p.balanceB - (p.flowB * (time - p.initialTimestampB)) + (p.flowA * (cumulativeA - p.initialCumulativeA))).toFixed(10))
+                                                        Number((p.balanceB - (p.flowB * (time - p.initialTimestampB)) + (p.flowA * (cumulativeA - p.initialCumulativeA)) + (p.flowB * p.rewardPercentage * (rewardsCumulativeB - p.initialRewardsCumulativeB))).toFixed(10))
                                                     }
                                                 />
                                             </div>
@@ -456,8 +468,8 @@ export default function LPandTraderWithFees() {
                                                 className='w-full outline-none monospace-font'
                                                 readonly
                                                 value={
-                                                    (-1 * p.flowA) + ' + ' + (totalFlowB > 0 ? p.flowB * totalFlowA / totalFlowB : 0) + ' = '
-                                                    + ((-1 * p.flowA) + (totalFlowB > 0 ? p.flowB * totalFlowA / totalFlowB : 0))
+                                                    (-1 * p.flowA) + ' + ' + ((totalFlowB > 0 ? p.flowB * totalFlowA / totalFlowB : 0) + (totalLiquidityFlowA > 0 ? p.flowA * p.rewardPercentage * (totalSwapFlowB * poolFee * (totalFlowA/totalFlowB)) / totalLiquidityFlowA : 0)) + ' = '
+                                                    + ((-1 * p.flowA) + ((totalFlowB > 0 ? p.flowB * totalFlowA / totalFlowB : 0) + (totalLiquidityFlowA > 0 ? p.flowA * p.rewardPercentage * (totalSwapFlowB * poolFee * (totalFlowA/totalFlowB)) / totalLiquidityFlowA : 0)))
                                                 }
                                             />
                                             </div>
@@ -465,8 +477,8 @@ export default function LPandTraderWithFees() {
                                                 className='w-full outline-none monospace-font'
                                                 readonly
                                                 value={
-                                                    (-1 * p.flowB) + ' + ' + (totalFlowA > 0 ? p.flowA * totalFlowB / totalFlowA : 0) + ' = '
-                                                    + ((-1 * p.flowB) + (totalFlowA > 0 ? p.flowA * totalFlowB / totalFlowA : 0))
+                                                    (-1 * p.flowB) + ' + ' + ((totalFlowA > 0 ? p.flowA * totalFlowB / totalFlowA : 0) + (totalLiquidityFlowB > 0 ? p.flowB * p.rewardPercentage * (totalSwapFlowA * poolFee * (totalFlowB/totalFlowA)) / totalLiquidityFlowB : 0)) + ' = '
+                                                    + ((-1 * p.flowB) + ((totalFlowA > 0 ? p.flowA * totalFlowB / totalFlowA : 0) + (totalLiquidityFlowB > 0 ? p.flowB * p.rewardPercentage * (totalSwapFlowA * poolFee * (totalFlowB/totalFlowA)) / totalLiquidityFlowB : 0)))
                                                 }
                                             />
                                         </div>
@@ -492,6 +504,9 @@ export default function LPandTraderWithFees() {
                             cumulativeA={cumulativeA}
                             cumulativeB={cumulativeB}
                             time={time}
+                            setTotalSwapFlowA={setTotalSwapFlowA}
+                            setTotalSwapFlowB={setTotalSwapFlowB}
+                            poolFee={poolFee}
                         />
                     }
                 </Modal>
@@ -510,7 +525,14 @@ export default function LPandTraderWithFees() {
                             setTotalFlowB={setTotalFlowB}
                             cumulativeA={cumulativeA}
                             cumulativeB={cumulativeB}
+                            rewardsCumulativeA={rewardsCumulativeA}
+                            rewardsCumulativeB={rewardsCumulativeB}
                             time={time}
+                            setTotalSwapFlowA={setTotalSwapFlowA}
+                            setTotalSwapFlowB={setTotalSwapFlowB}
+                            setTotalLiquidityFlowA={setTotalLiquidityFlowA}
+                            setTotalLiquidityFlowB={setTotalLiquidityFlowB}
+                            poolFee={poolFee}
                         />
                     }
                 </Modal>
