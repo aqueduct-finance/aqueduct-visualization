@@ -81,7 +81,7 @@ const EditSwap = (props) => {
                 FlowRate
             </p>
             <input
-                className='border-2 focus:ring-red-500 focus:border-red-500 rounded-xl p-2 w-full' 
+                className='border-2 rounded-xl p-2 w-full' 
                 type="text"
                 pattern="^[0-9]*[.,]?[0-9]*$"
                 value={displayedFlowRate}
